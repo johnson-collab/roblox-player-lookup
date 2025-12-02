@@ -6,9 +6,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Fetch avatar thumbnail from Roblox
+    // Try the thumbnail API with avatar-headshot endpoint
     const response = await fetch(
-      `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=150x150&format=Png&isCircular=false`
+      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png&isCircular=false`
     );
 
     const text = await response.text();
@@ -18,6 +18,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Avatar not found" });
     }
 
+    // Try to parse as JSON
     let data;
     try {
       data = JSON.parse(text);
