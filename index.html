@@ -40,6 +40,12 @@
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
+            overflow: hidden;
+        }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .btn {
@@ -144,6 +150,12 @@
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
+            overflow: hidden;
+        }
+        .player-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         
         .player-details { font-size: 0.875rem; }
@@ -183,7 +195,7 @@
         <!-- User Info Bar -->
         <div id="userBar" class="card user-bar hidden">
             <div class="user-info">
-                <div class="avatar">👤</div>
+                <div class="avatar" id="userAvatar">👤</div>
                 <div>
                     <div id="userDisplayName" style="font-weight: 600;"></div>
                     <div id="userUsername" style="color: #bfdbfe; font-size: 0.875rem;"></div>
@@ -339,12 +351,25 @@
                     return;
                 }
 
+                // Fetch avatar
+                let avatarUrl = null;
+                try {
+                    const avatarResponse = await fetch(`/api/avatar?userId=${userId}`);
+                    const avatarData = await avatarResponse.json();
+                    if (avatarData.data && avatarData.data.length > 0) {
+                        avatarUrl = avatarData.data[0].imageUrl;
+                    }
+                } catch (e) {
+                    console.log('Avatar fetch failed');
+                }
+
                 currentUser = {
                     id: details.id,
                     username: details.name,
                     displayName: details.displayName,
                     description: details.description,
-                    created: details.created
+                    created: details.created,
+                    avatarUrl: avatarUrl
                 };
 
                 localStorage.setItem('current_user', JSON.stringify(currentUser));
@@ -416,6 +441,18 @@
                     return;
                 }
 
+                // Fetch avatar
+                let avatarUrl = null;
+                try {
+                    const avatarResponse = await fetch(`/api/avatar?userId=${userId}`);
+                    const avatarData = await avatarResponse.json();
+                    if (avatarData.data && avatarData.data.length > 0) {
+                        avatarUrl = avatarData.data[0].imageUrl;
+                    }
+                } catch (e) {
+                    console.log('Avatar fetch failed');
+                }
+
                 const collectedPlayer = {
                     id: details.id,
                     username: details.name,
@@ -423,7 +460,8 @@
                     description: details.description,
                     created: details.created,
                     dateCaught: new Date().toISOString(),
-                    collectionCode: code
+                    collectionCode: code,
+                    avatarUrl: avatarUrl
                 };
 
                 bloxydex.push(collectedPlayer);
@@ -484,6 +522,15 @@
             document.getElementById('tabButtons').classList.remove('hidden');
             document.getElementById('userDisplayName').textContent = currentUser.displayName;
             document.getElementById('userUsername').textContent = `@${currentUser.username}`;
+            
+            // Set avatar
+            const avatarEl = document.getElementById('userAvatar');
+            if (currentUser.avatarUrl) {
+                avatarEl.innerHTML = `<img src="${currentUser.avatarUrl}" alt="Avatar" />`;
+            } else {
+                avatarEl.innerHTML = '👤';
+            }
+            
             switchTab('bloxydex');
         }
 
@@ -517,7 +564,9 @@
                 <div class="player-card">
                     <div class="player-header">
                         <div class="player-info">
-                            <div class="player-avatar">👤</div>
+                            <div class="player-avatar">
+                                ${player.avatarUrl ? `<img src="${player.avatarUrl}" alt="Avatar" />` : '👤'}
+                            </div>
                             <div>
                                 <h3 style="font-weight: bold; font-size: 1.125rem;">${escapeHtml(player.displayName)}</h3>
                                 <p style="color: #bfdbfe; font-size: 0.875rem;">@${escapeHtml(player.username)}</p>
