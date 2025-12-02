@@ -4,125 +4,557 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bloxydex - Collect Roblox Players</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3a8a 0%, #581c87 50%, #831843 100%);
+            color: white;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 { font-size: 3rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .header p { color: #bfdbfe; }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .user-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .avatar {
+            width: 48px;
+            height: 48px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+        .btn:disabled { background: #6b7280; cursor: not-allowed; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #2563eb; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover:not(:disabled) { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-pink { background: #ec4899; color: white; }
+        .btn-pink:hover:not(:disabled) { background: #db2777; }
+        .btn-purple { background: #a855f7; color: white; }
+        .btn-purple:hover:not(:disabled) { background: #9333ea; }
+        
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .tab:hover { background: rgba(255, 255, 255, 0.2); }
+        .tab.active { background: white; color: #581c87; }
+        
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+        }
+        .input::placeholder { color: #bfdbfe; }
+        .input:focus {
+            outline: none;
+            border-color: white;
+        }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        
+        .input-group { display: flex; gap: 0.5rem; }
+        .input-group .input { flex: 1; }
+        
+        .alert {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+        }
+        .alert-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+        }
+        
+        .hint { color: #fde047; font-size: 0.875rem; margin-top: 0.5rem; }
+        
+        .hidden { display: none !important; }
+        
+        .form-container { max-width: 500px; margin: 0 auto; }
+        
+        .player-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .player-header {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .player-info { display: flex; align-items: center; gap: 1rem; }
+        .player-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .player-details { font-size: 0.875rem; }
+        .player-details > div { margin-bottom: 0.5rem; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        .empty-state-icon { font-size: 4rem; margin-bottom: 1rem; }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #fde047;
+            font-size: 0.875rem;
+        }
+        
+        .bio-box {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.375rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900">
-    <div class="container mx-auto px-4 py-8">
+<body>
+    <div class="container">
         <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-5xl font-bold text-white mb-2">Bloxydex</h1>
-            <p class="text-blue-200">Collect and track Roblox players!</p>
+        <div class="header">
+            <h1>Bloxydex</h1>
+            <p>Collect and track Roblox players!</p>
         </div>
 
         <!-- User Info Bar -->
-        <div id="userBar" class="hidden bg-white/10 backdrop-blur-md rounded-lg p-4 mb-6 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span class="text-white text-2xl">👤</span>
-                </div>
+        <div id="userBar" class="card user-bar hidden">
+            <div class="user-info">
+                <div class="avatar">👤</div>
                 <div>
-                    <p class="text-white font-semibold" id="userDisplayName"></p>
-                    <p class="text-blue-200 text-sm" id="userUsername"></p>
+                    <div id="userDisplayName" style="font-weight: 600;"></div>
+                    <div id="userUsername" style="color: #bfdbfe; font-size: 0.875rem;"></div>
                 </div>
             </div>
-            <button id="logoutBtn" class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition">
-                🚪 Logout
-            </button>
+            <button id="logoutBtn" class="btn btn-danger">🚪 Logout</button>
         </div>
 
         <!-- Tabs -->
-        <div id="tabButtons" class="hidden flex gap-2 mb-6">
-            <button id="bloxydexTab" class="flex-1 py-3 rounded-lg font-semibold transition bg-white text-purple-900">
+        <div id="tabButtons" class="tabs hidden">
+            <button id="bloxydexTab" class="tab active">
                 🏆 My Bloxydex (<span id="bloxydexCount">0</span>)
             </button>
-            <button id="collectTab" class="flex-1 py-3 rounded-lg font-semibold transition bg-white/10 text-white hover:bg-white/20">
+            <button id="collectTab" class="tab">
                 🔍 Collect Player
             </button>
         </div>
 
         <!-- Content Container -->
-        <div class="bg-white/10 backdrop-blur-md rounded-lg p-6">
+        <div class="card">
             <!-- Login Section -->
             <div id="loginSection">
-                <div class="max-w-md mx-auto">
-                    <h2 class="text-2xl font-bold text-white mb-4">Login to Bloxydex</h2>
-                    <p class="text-blue-200 mb-6">Verify your Roblox account by adding a code to your About section</p>
+                <div class="form-container">
+                    <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">Login to Bloxydex</h2>
+                    <p style="color: #bfdbfe; margin-bottom: 1.5rem;">Verify your Roblox account by adding a code to your About section</p>
 
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-white mb-2">Roblox Username</label>
-                            <input type="text" id="loginUsername" placeholder="Enter your Roblox username" 
-                                class="w-full px-4 py-3 rounded-lg bg-white/20 text-white placeholder-blue-200 border border-white/30 focus:outline-none focus:border-white" />
-                        </div>
-
-                        <div>
-                            <label class="block text-white mb-2">Verification Code</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="loginCode" readonly placeholder="Right-click and open console" 
-                                    class="flex-1 px-4 py-3 rounded-lg bg-white/20 text-white placeholder-blue-200 border border-white/30" />
-                                <button id="generateLoginCodeBtn" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition">
-                                    Generate
-                                </button>
-                            </div>
-                            <p id="loginCodeHint" class="hidden text-yellow-300 text-sm mt-2">
-                                Add this code to your Roblox About section, then click Login
-                            </p>
-                        </div>
-
-                        <div id="loginError" class="hidden bg-red-500/20 border border-red-500 text-white p-3 rounded-lg"></div>
-
-                        <button id="loginBtn" class="w-full py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition">
-                            Login
-                        </button>
+                    <div class="form-group">
+                        <label>Roblox Username</label>
+                        <input type="text" id="loginUsername" class="input" placeholder="Enter your Roblox username" />
                     </div>
+
+                    <div class="form-group">
+                        <label>Verification Code</label>
+                        <div class="input-group">
+                            <input type="text" id="loginCode" class="input" readonly placeholder="Click 'Generate'" />
+                            <button id="generateLoginCodeBtn" class="btn btn-primary">Generate</button>
+                        </div>
+                        <p id="loginCodeHint" class="hint hidden">
+                            Add this code to your Roblox About section, then click Login
+                        </p>
+                    </div>
+
+                    <div id="loginError" class="alert alert-error hidden"></div>
+
+                    <button id="loginBtn" class="btn btn-success" style="width: 100%;">Login</button>
                 </div>
             </div>
 
             <!-- Collect Section -->
             <div id="collectSection" class="hidden">
-                <div class="max-w-md mx-auto">
-                    <h2 class="text-2xl font-bold text-white mb-4">Collect a Player</h2>
-                    <p class="text-blue-200 mb-6">Generate a code and ask the player to add it to their About section</p>
+                <div class="form-container">
+                    <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">Collect a Player</h2>
+                    <p style="color: #bfdbfe; margin-bottom: 1.5rem;">Generate a code and ask the player to add it to their About section</p>
 
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-white mb-2">Player Username</label>
-                            <input type="text" id="collectUsername" placeholder="Enter player's username" 
-                                class="w-full px-4 py-3 rounded-lg bg-white/20 text-white placeholder-blue-200 border border-white/30 focus:outline-none focus:border-white" />
-                        </div>
-
-                        <div>
-                            <label class="block text-white mb-2">Collection Code</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="collectCode" readonly placeholder="Click 'Generate Code'" 
-                                    class="flex-1 px-4 py-3 rounded-lg bg-white/20 text-white placeholder-blue-200 border border-white/30" />
-                                <button id="generateCollectCodeBtn" class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-semibold transition">
-                                    Generate
-                                </button>
-                            </div>
-                            <p id="collectCodeHint" class="hidden text-yellow-300 text-sm mt-2">
-                                Share this code with the player to add to their About section
-                            </p>
-                        </div>
-
-                        <div id="collectError" class="hidden bg-red-500/20 border border-red-500 text-white p-3 rounded-lg"></div>
-                        <div id="collectSuccess" class="hidden bg-green-500/20 border border-green-500 text-white p-3 rounded-lg"></div>
-
-                        <button id="collectBtn" class="w-full py-3 bg-pink-500 hover:bg-pink-600 disabled:bg-gray-500 text-white rounded-lg font-semibold transition">
-                            Collect Player
-                        </button>
+                    <div class="form-group">
+                        <label>Player Username</label>
+                        <input type="text" id="collectUsername" class="input" placeholder="Enter player's username" />
                     </div>
+
+                    <div class="form-group">
+                        <label>Collection Code</label>
+                        <div class="input-group">
+                            <input type="text" id="collectCode" class="input" readonly placeholder="Click 'Generate Code'" />
+                            <button id="generateCollectCodeBtn" class="btn btn-purple">Generate</button>
+                        </div>
+                        <p id="collectCodeHint" class="hint hidden">
+                            Share this code with the player to add to their About section
+                        </p>
+                    </div>
+
+                    <div id="collectError" class="alert alert-error hidden"></div>
+                    <div id="collectSuccess" class="alert alert-success hidden"></div>
+
+                    <button id="collectBtn" class="btn btn-pink" style="width: 100%;">Collect Player</button>
                 </div>
             </div>
 
             <!-- Bloxydex Section -->
             <div id="bloxydexSection" class="hidden">
-                <h2 class="text-2xl font-bold text-white mb-4">Your Bloxydex</h2>
+                <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">Your Bloxydex</h2>
                 <div id="bloxydexList"></div>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        let currentUser = null;
+        let bloxydex = [];
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', loadUserData);
+
+        async function loadUserData() {
+            const userData = localStorage.getItem('current_user');
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                showLoggedInView();
+            }
+            
+            const bloxydexData = localStorage.getItem('bloxydex');
+            if (bloxydexData) {
+                bloxydex = JSON.parse(bloxydexData);
+                updateBloxydexCount();
+            }
+        }
+
+        // Login functionality
+        document.getElementById('generateLoginCodeBtn').addEventListener('click', () => {
+            const code = `BLOXYAUTH-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            document.getElementById('loginCode').value = code;
+            document.getElementById('loginCodeHint').classList.remove('hidden');
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', handleLogin);
+
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const code = document.getElementById('loginCode').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            const loginBtn = document.getElementById('loginBtn');
+
+            errorDiv.classList.add('hidden');
+
+            if (!username) {
+                showError(errorDiv, 'Please enter a username');
+                return;
+            }
+            if (!code) {
+                showError(errorDiv, 'Please generate a login code first');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Verifying...';
+
+            try {
+                const response = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+
+                if (!data.data || data.data.length === 0) {
+                    throw new Error('User not found');
+                }
+
+                const userId = data.data[0].id;
+                
+                // Get user details
+                const detailsResponse = await fetch(`/api/userdetails?userId=${userId}`);
+                const details = await detailsResponse.json();
+
+                // Check if code is in bio
+                if (!details.description || !details.description.includes(code)) {
+                    showError(errorDiv, 'Code not found in your About section. Please add it and try again.');
+                    return;
+                }
+
+                currentUser = {
+                    id: details.id,
+                    username: details.name,
+                    displayName: details.displayName,
+                    description: details.description,
+                    created: details.created
+                };
+
+                localStorage.setItem('current_user', JSON.stringify(currentUser));
+                showLoggedInView();
+                document.getElementById('loginCode').value = '';
+                document.getElementById('loginUsername').value = '';
+            } catch (error) {
+                showError(errorDiv, 'Failed to verify user. Please check the username and try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        }
+
+        // Collect functionality
+        document.getElementById('generateCollectCodeBtn').addEventListener('click', () => {
+            const code = `${Math.random().toString(36).substr(2, 9).toUpperCase()}-glosbloxymon`;
+            document.getElementById('collectCode').value = code;
+            document.getElementById('collectCodeHint').classList.remove('hidden');
+        });
+
+        document.getElementById('collectBtn').addEventListener('click', handleCollect);
+
+        async function handleCollect() {
+            const username = document.getElementById('collectUsername').value.trim();
+            const code = document.getElementById('collectCode').value.trim();
+            const errorDiv = document.getElementById('collectError');
+            const successDiv = document.getElementById('collectSuccess');
+            const collectBtn = document.getElementById('collectBtn');
+
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+
+            if (!username) {
+                showError(errorDiv, 'Please enter a username to collect');
+                return;
+            }
+            if (!code) {
+                showError(errorDiv, 'Please generate a collection code first');
+                return;
+            }
+
+            collectBtn.disabled = true;
+            collectBtn.textContent = 'Collecting...';
+
+            try {
+                const response = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+
+                if (!data.data || data.data.length === 0) {
+                    throw new Error('User not found');
+                }
+
+                const userId = data.data[0].id;
+                
+                // Get user details
+                const detailsResponse = await fetch(`/api/userdetails?userId=${userId}`);
+                const details = await detailsResponse.json();
+
+                // Check if code is in bio
+                if (!details.description || !details.description.includes(code)) {
+                    showError(errorDiv, 'Collection code not found in their About section. Ask them to add it!');
+                    return;
+                }
+
+                // Check if already collected
+                if (bloxydex.some(p => p.id === details.id)) {
+                    showError(errorDiv, 'You already collected this player!');
+                    return;
+                }
+
+                const collectedPlayer = {
+                    id: details.id,
+                    username: details.name,
+                    displayName: details.displayName,
+                    description: details.description,
+                    created: details.created,
+                    dateCaught: new Date().toISOString(),
+                    collectionCode: code
+                };
+
+                bloxydex.push(collectedPlayer);
+                localStorage.setItem('bloxydex', JSON.stringify(bloxydex));
+                updateBloxydexCount();
+                
+                successDiv.textContent = `Successfully collected ${details.displayName}!`;
+                successDiv.classList.remove('hidden');
+                
+                document.getElementById('collectUsername').value = '';
+                document.getElementById('collectCode').value = '';
+                document.getElementById('collectCodeHint').classList.add('hidden');
+            } catch (error) {
+                showError(errorDiv, 'Failed to collect player. Please check the username and try again.');
+            } finally {
+                collectBtn.disabled = false;
+                collectBtn.textContent = 'Collect Player';
+            }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            currentUser = null;
+            localStorage.removeItem('current_user');
+            showLoginView();
+        });
+
+        // Tab switching
+        document.getElementById('bloxydexTab').addEventListener('click', () => {
+            switchTab('bloxydex');
+        });
+
+        document.getElementById('collectTab').addEventListener('click', () => {
+            switchTab('collect');
+        });
+
+        function switchTab(tab) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('collectSection').classList.add('hidden');
+            document.getElementById('bloxydexSection').classList.add('hidden');
+
+            document.getElementById('bloxydexTab').classList.remove('active');
+            document.getElementById('collectTab').classList.remove('active');
+
+            if (tab === 'bloxydex') {
+                document.getElementById('bloxydexSection').classList.remove('hidden');
+                document.getElementById('bloxydexTab').classList.add('active');
+                renderBloxydex();
+            } else if (tab === 'collect') {
+                document.getElementById('collectSection').classList.remove('hidden');
+                document.getElementById('collectTab').classList.add('active');
+            }
+        }
+
+        function showLoggedInView() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('userBar').classList.remove('hidden');
+            document.getElementById('tabButtons').classList.remove('hidden');
+            document.getElementById('userDisplayName').textContent = currentUser.displayName;
+            document.getElementById('userUsername').textContent = `@${currentUser.username}`;
+            switchTab('bloxydex');
+        }
+
+        function showLoginView() {
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('collectSection').classList.add('hidden');
+            document.getElementById('bloxydexSection').classList.add('hidden');
+            document.getElementById('userBar').classList.add('hidden');
+            document.getElementById('tabButtons').classList.add('hidden');
+        }
+
+        function updateBloxydexCount() {
+            document.getElementById('bloxydexCount').textContent = bloxydex.length;
+        }
+
+        function renderBloxydex() {
+            const container = document.getElementById('bloxydexList');
+            
+            if (bloxydex.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏆</div>
+                        <p style="color: rgba(255, 255, 255, 0.7); font-size: 1.125rem;">No players collected yet!</p>
+                        <p style="color: #bfdbfe; margin-top: 0.5rem;">Start collecting players to build your Bloxydex</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = bloxydex.map(player => `
+                <div class="player-card">
+                    <div class="player-header">
+                        <div class="player-info">
+                            <div class="player-avatar">👤</div>
+                            <div>
+                                <h3 style="font-weight: bold; font-size: 1.125rem;">${escapeHtml(player.displayName)}</h3>
+                                <p style="color: #bfdbfe; font-size: 0.875rem;">@${escapeHtml(player.username)}</p>
+                            </div>
+                        </div>
+                        <div class="badge">
+                            <span>#${player.id}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="player-details">
+                        <div style="color: #bfdbfe;">
+                            📅 Caught: ${new Date(player.dateCaught).toLocaleDateString()}
+                        </div>
+                        <div style="color: rgba(255, 255, 255, 0.7);">
+                            <span style="font-weight: 600;">Account Created:</span> ${new Date(player.created).toLocaleDateString()}
+                        </div>
+                        ${player.description ? `
+                            <div class="bio-box">
+                                <span style="font-weight: 600;">Bio:</span> ${escapeHtml(player.description.slice(0, 100))}${player.description.length > 100 ? '...' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>
