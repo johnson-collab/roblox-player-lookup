@@ -112,12 +112,19 @@
                 const data = await response.json();
                 
                 // Fetch avatar thumbnail
-                const avatarResponse = await fetch(`/api/avatar?userId=${userId}`);
-                const avatarData = await avatarResponse.json();
-                
-                // Add avatar URL to user data
-                if (avatarData.data && avatarData.data.length > 0) {
-                    data.avatarUrl = avatarData.data[0].imageUrl;
+                try {
+                    const avatarResponse = await fetch(`/api/avatar?userId=${userId}`);
+                    const avatarData = await avatarResponse.json();
+                    
+                    console.log('Avatar data:', avatarData); // Debug log
+                    
+                    // Add avatar URL to user data
+                    if (avatarData.data && avatarData.data.length > 0) {
+                        data.avatarUrl = avatarData.data[0].imageUrl;
+                    }
+                } catch (avatarErr) {
+                    console.error('Avatar fetch failed:', avatarErr);
+                    // Continue without avatar if it fails
                 }
                 
                 displayUserData(data);
@@ -141,8 +148,11 @@
 
             result.innerHTML = `
                 <div class="flex items-center gap-4 mb-6">
-                    <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                        👤
+                    <div class="w-20 h-20 rounded-full overflow-hidden bg-purple-600 flex items-center justify-center">
+                        ${data.avatarUrl 
+                            ? `<img src="${data.avatarUrl}" alt="${escapeHtml(data.name)}'s avatar" class="w-full h-full object-cover" />`
+                            : '<span class="text-white text-2xl">👤</span>'
+                        }
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800">
