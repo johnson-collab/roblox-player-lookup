@@ -110,6 +110,16 @@
                 }
 
                 const data = await response.json();
+                
+                // Fetch avatar thumbnail
+                const avatarResponse = await fetch(`/api/avatar?userId=${userId}`);
+                const avatarData = await avatarResponse.json();
+                
+                // Add avatar URL to user data
+                if (avatarData.data && avatarData.data.length > 0) {
+                    data.avatarUrl = avatarData.data[0].imageUrl;
+                }
+                
                 displayUserData(data);
             } catch (err) {
                 showError(err.message || 'Failed to fetch user details');
