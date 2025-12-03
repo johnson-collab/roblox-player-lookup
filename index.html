@@ -380,19 +380,18 @@
                 localStorage.setItem('current_user', JSON.stringify(currentUser));
                 await window.storage.set('current_user', JSON.stringify(currentUser));
                 
-                // Load their existing bloxydex
+                // Reset and load their existing bloxydex
+                bloxydex = [];
                 try {
                     const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`);
                     if (bloxydexData) {
                         bloxydex = JSON.parse(bloxydexData.value);
-                        updateBloxydexCount();
-                    } else {
-                        bloxydex = [];
                     }
                 } catch (e) {
-                    bloxydex = [];
+                    console.log('No existing collection for this user');
                 }
                 
+                updateBloxydexCount();
                 showLoggedInView();
                 document.getElementById('loginCode').value = '';
                 document.getElementById('loginUsername').value = '';
@@ -563,6 +562,7 @@
             document.getElementById('bloxydexSection').classList.add('hidden');
             document.getElementById('userBar').classList.add('hidden');
             document.getElementById('tabButtons').classList.add('hidden');
+            updateBloxydexCount();
         }
 
         function updateBloxydexCount() {
