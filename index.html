@@ -290,18 +290,10 @@
 
         async function loadUserData() {
             try {
-                // FIXED: Added false parameter for personal storage only
-                const userData = await window.storage.get('current_user', false);
+                const userData = localStorage.getItem('current_user');
                 if (userData) {
-                    currentUser = JSON.parse(userData.value);
-                    showLoggedInView();
-                    
-                    // Load bloxydex for this specific user - personal storage
-                    const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`, false);
-                    if (bloxydexData) {
-                        bloxydex = JSON.parse(bloxydexData.value);
-                        updateBloxydexCount();
-                    }
+                    currentUser = JSON.parse(userData);
+                    await showLoggedInView();
                 }
             } catch (error) {
                 console.log('No stored data yet');
@@ -341,8 +333,6 @@
                 const response = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
                 const data = await response.json();
 
-                console.log('User API response:', data);
-
                 if (!data.data || data.data.length === 0) {
                     throw new Error('User not found');
                 }
@@ -352,8 +342,6 @@
                 // Get user details
                 const detailsResponse = await fetch(`/api/userdetails?userId=${userId}`);
                 const details = await detailsResponse.json();
-
-                console.log('User details:', details);
 
                 // Check if code is in bio
                 if (!details.description || !details.description.includes(code)) {
@@ -382,15 +370,31 @@
                     avatarUrl: avatarUrl
                 };
 
-                // FIXED: Added false parameter for personal storage only
-                await window.storage.set('current_user', JSON.stringify(currentUser), false);
+                // Save to database
+                const authResponse = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUser.id,
+                        username: currentUser.username,
+                        displayName: currentUser.displayName,
+                        description: currentUser.description,
+                        created: currentUser.created,
+                        avatarUrl: currentUser.avatarUrl
+                    })
+                });
+
+                if (!authResponse.ok) {
+                    throw new Error('Failed to save user to database');
+                }
+
+                localStorage.setItem('current_user', JSON.stringify(currentUser));
                 
-                showLoggedInView();
+                await showLoggedInView();
                 document.getElementById('loginCode').value = '';
                 document.getElementById('loginUsername').value = '';
             } catch (error) {
-                console.error('Login error:', error);
-                showError(errorDiv, 'Failed to verify user. Please check the username and try again. Error: ' + error.message);
+                showError(errorDiv, 'Failed to verify user. Please check the username and try again.');
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Login';
@@ -448,12 +452,6 @@
                     return;
                 }
 
-                // Check if already collected
-                if (bloxydex.some(p => p.id === details.id)) {
-                    showError(errorDiv, 'You already collected this player!');
-                    return;
-                }
-
                 // Fetch avatar
                 let avatarUrl = null;
                 try {
@@ -466,23 +464,35 @@
                     console.log('Avatar fetch failed');
                 }
 
-                const collectedPlayer = {
-                    id: details.id,
-                    username: details.name,
-                    displayName: details.displayName,
-                    description: details.description,
-                    created: details.created,
-                    dateCaught: new Date().toISOString(),
-                    collectionCode: code,
-                    avatarUrl: avatarUrl
-                };
+                // Save to database
+                const collectResponse = await fetch('/api/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        collectorId: currentUser.id,
+                        playerId: details.id,
+                        playerUsername: details.name,
+                        playerDisplayName: details.displayName,
+                        playerDescription: details.description,
+                        playerCreated: details.created,
+                        playerAvatarUrl: avatarUrl,
+                        collectionCode: code
+                    })
+                });
 
-                bloxydex.push(collectedPlayer);
-                
-                // FIXED: Added false parameter for personal storage only
-                await window.storage.set(`bloxydex_${currentUser.id}`, JSON.stringify(bloxydex), false);
-                
-                updateBloxydexCount();
+                const collectData = await collectResponse.json();
+
+                if (collectResponse.status === 409) {
+                    showError(errorDiv, 'You already collected this player!');
+                    return;
+                }
+
+                if (!collectResponse.ok) {
+                    throw new Error(collectData.error || 'Failed to collect player');
+                }
+
+                // Reload bloxydex
+                await loadBloxydex();
                 
                 successDiv.textContent = `Successfully collected ${details.displayName}!`;
                 successDiv.classList.remove('hidden');
@@ -498,16 +508,28 @@
             }
         }
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            // FIXED: Added false parameter for personal storage only
+        // Load bloxydex from database
+        async function loadBloxydex() {
+            if (!currentUser) return;
+
             try {
-                await window.storage.delete('current_user', false);
+                const response = await fetch(`/api/bloxydex?userId=${currentUser.id}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    bloxydex = data.players;
+                    updateBloxydexCount();
+                }
             } catch (error) {
-                console.log('Error clearing storage');
+                console.error('Failed to load bloxydex:', error);
             }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
             currentUser = null;
             bloxydex = [];
+            localStorage.removeItem('current_user');
             showLoginView();
         });
 
@@ -538,7 +560,7 @@
             }
         }
 
-        function showLoggedInView() {
+        async function showLoggedInView() {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('userBar').classList.remove('hidden');
             document.getElementById('tabButtons').classList.remove('hidden');
@@ -553,6 +575,7 @@
                 avatarEl.innerHTML = '👤';
             }
             
+            await loadBloxydex();
             switchTab('bloxydex');
         }
 
@@ -587,28 +610,28 @@
                     <div class="player-header">
                         <div class="player-info">
                             <div class="player-avatar">
-                                ${player.avatarUrl ? `<img src="${player.avatarUrl}" alt="Avatar" />` : '👤'}
+                                ${player.player_avatar_url ? `<img src="${player.player_avatar_url}" alt="Avatar" />` : '👤'}
                             </div>
                             <div>
-                                <h3 style="font-weight: bold; font-size: 1.125rem;">${escapeHtml(player.displayName)}</h3>
-                                <p style="color: #bfdbfe; font-size: 0.875rem;">@${escapeHtml(player.username)}</p>
+                                <h3 style="font-weight: bold; font-size: 1.125rem;">${escapeHtml(player.player_display_name)}</h3>
+                                <p style="color: #bfdbfe; font-size: 0.875rem;">@${escapeHtml(player.player_username)}</p>
                             </div>
                         </div>
                         <div class="badge">
-                            <span>#${player.id}</span>
+                            <span>#${player.player_id}</span>
                         </div>
                     </div>
                     
                     <div class="player-details">
                         <div style="color: #bfdbfe;">
-                            📅 Caught: ${new Date(player.dateCaught).toLocaleDateString()}
+                            📅 Caught: ${new Date(player.date_caught).toLocaleDateString()}
                         </div>
                         <div style="color: rgba(255, 255, 255, 0.7);">
-                            <span style="font-weight: 600;">Account Created:</span> ${new Date(player.created).toLocaleDateString()}
+                            <span style="font-weight: 600;">Account Created:</span> ${new Date(player.player_created).toLocaleDateString()}
                         </div>
-                        ${player.description ? `
+                        ${player.player_description ? `
                             <div class="bio-box">
-                                <span style="font-weight: 600;">Bio:</span> ${escapeHtml(player.description.slice(0, 100))}${player.description.length > 100 ? '...' : ''}
+                                <span style="font-weight: 600;">Bio:</span> ${escapeHtml(player.player_description.slice(0, 100))}${player.player_description.length > 100 ? '...' : ''}
                             </div>
                         ` : ''}
                     </div>
