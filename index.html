@@ -289,16 +289,21 @@
         window.addEventListener('DOMContentLoaded', loadUserData);
 
         async function loadUserData() {
-            const userData = localStorage.getItem('current_user');
-            if (userData) {
-                currentUser = JSON.parse(userData);
-                showLoggedInView();
-            }
-            
-            const bloxydexData = localStorage.getItem('bloxydex');
-            if (bloxydexData) {
-                bloxydex = JSON.parse(bloxydexData);
-                updateBloxydexCount();
+            try {
+                const userData = await window.storage.get('current_user');
+                if (userData) {
+                    currentUser = JSON.parse(userData.value);
+                    showLoggedInView();
+                    
+                    // Load bloxydex for this specific user
+                    const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`);
+                    if (bloxydexData) {
+                        bloxydex = JSON.parse(bloxydexData.value);
+                        updateBloxydexCount();
+                    }
+                }
+            } catch (error) {
+                console.log('No stored data yet');
             }
         }
 
@@ -373,6 +378,21 @@
                 };
 
                 localStorage.setItem('current_user', JSON.stringify(currentUser));
+                await window.storage.set('current_user', JSON.stringify(currentUser));
+                
+                // Load their existing bloxydex
+                try {
+                    const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`);
+                    if (bloxydexData) {
+                        bloxydex = JSON.parse(bloxydexData.value);
+                        updateBloxydexCount();
+                    } else {
+                        bloxydex = [];
+                    }
+                } catch (e) {
+                    bloxydex = [];
+                }
+                
                 showLoggedInView();
                 document.getElementById('loginCode').value = '';
                 document.getElementById('loginUsername').value = '';
@@ -466,6 +486,7 @@
 
                 bloxydex.push(collectedPlayer);
                 localStorage.setItem('bloxydex', JSON.stringify(bloxydex));
+                await window.storage.set(`bloxydex_${currentUser.id}`, JSON.stringify(bloxydex));
                 updateBloxydexCount();
                 
                 successDiv.textContent = `Successfully collected ${details.displayName}!`;
@@ -483,9 +504,11 @@
         }
 
         // Logout
-        document.getElementById('logoutBtn').addEventListener('click', () => {
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
             currentUser = null;
+            bloxydex = [];
             localStorage.removeItem('current_user');
+            await window.storage.delete('current_user');
             showLoginView();
         });
 
