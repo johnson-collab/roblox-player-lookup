@@ -338,40 +338,17 @@
 
             try {
                 const response = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
-                
-                if (!response.ok) {
-                    console.error('User API response not OK:', response.status);
-                    throw new Error('Failed to fetch user');
-                }
-                
                 const data = await response.json();
-                console.log('User API response:', data);
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
 
                 if (!data.data || data.data.length === 0) {
                     throw new Error('User not found');
                 }
 
                 const userId = data.data[0].id;
-                console.log('Found user ID:', userId);
                 
                 // Get user details
                 const detailsResponse = await fetch(`/api/userdetails?userId=${userId}`);
-                
-                if (!detailsResponse.ok) {
-                    console.error('Details API response not OK:', detailsResponse.status);
-                    throw new Error('Failed to fetch user details');
-                }
-                
                 const details = await detailsResponse.json();
-                console.log('User details:', details);
-
-                if (details.error) {
-                    throw new Error(details.error);
-                }
 
                 // Check if code is in bio
                 if (!details.description || !details.description.includes(code)) {
@@ -403,18 +380,19 @@
                 localStorage.setItem('current_user', JSON.stringify(currentUser));
                 await window.storage.set('current_user', JSON.stringify(currentUser));
                 
-                // Reset and load their existing bloxydex
-                bloxydex = [];
+                // Load their existing bloxydex
                 try {
                     const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`);
                     if (bloxydexData) {
                         bloxydex = JSON.parse(bloxydexData.value);
+                        updateBloxydexCount();
+                    } else {
+                        bloxydex = [];
                     }
                 } catch (e) {
-                    console.log('No existing collection for this user');
+                    bloxydex = [];
                 }
                 
-                updateBloxydexCount();
                 showLoggedInView();
                 document.getElementById('loginCode').value = '';
                 document.getElementById('loginUsername').value = '';
