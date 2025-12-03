@@ -290,13 +290,14 @@
 
         async function loadUserData() {
             try {
-                const userData = await window.storage.get('current_user');
+                // FIXED: Added false parameter for personal storage only
+                const userData = await window.storage.get('current_user', false);
                 if (userData) {
                     currentUser = JSON.parse(userData.value);
                     showLoggedInView();
                     
-                    // Load bloxydex for this specific user
-                    const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`);
+                    // Load bloxydex for this specific user - personal storage
+                    const bloxydexData = await window.storage.get(`bloxydex_${currentUser.id}`, false);
                     if (bloxydexData) {
                         bloxydex = JSON.parse(bloxydexData.value);
                         updateBloxydexCount();
@@ -377,8 +378,8 @@
                     avatarUrl: avatarUrl
                 };
 
-                // FIXED: Save to persistent storage instead of localStorage
-                await window.storage.set('current_user', JSON.stringify(currentUser));
+                // FIXED: Added false parameter for personal storage only
+                await window.storage.set('current_user', JSON.stringify(currentUser), false);
                 
                 showLoggedInView();
                 document.getElementById('loginCode').value = '';
@@ -473,8 +474,8 @@
 
                 bloxydex.push(collectedPlayer);
                 
-                // FIXED: Save to persistent storage with user-specific key instead of localStorage
-                await window.storage.set(`bloxydex_${currentUser.id}`, JSON.stringify(bloxydex));
+                // FIXED: Added false parameter for personal storage only
+                await window.storage.set(`bloxydex_${currentUser.id}`, JSON.stringify(bloxydex), false);
                 
                 updateBloxydexCount();
                 
@@ -494,9 +495,9 @@
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            // FIXED: Clear from persistent storage instead of localStorage
+            // FIXED: Added false parameter for personal storage only
             try {
-                await window.storage.delete('current_user');
+                await window.storage.delete('current_user', false);
             } catch (error) {
                 console.log('Error clearing storage');
             }
